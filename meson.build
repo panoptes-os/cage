@@ -39,6 +39,7 @@ endif
 
 wlroots        = dependency('wlroots-0.20', fallback: ['wlroots', 'wlroots'])
 wayland_server = dependency('wayland-server')
+wayland_client = dependency('wayland-client')
 xkbcommon      = dependency('xkbcommon')
 math           = cc.find_library('m')
 
@@ -90,10 +91,34 @@ if scdoc.found()
   endforeach
 endif
 
+wayland_scanner = find_program('wayland-scanner', native: true)
+window_xml = 'protocols/panoptes-window-v1.xml'
+window_code = custom_target(
+  'panoptes-window-v1-protocol.c',
+  input: window_xml,
+  output: '@BASENAME@-protocol.c',
+  command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
+)
+window_server_header = custom_target(
+  'panoptes-window-v1-protocol.h',
+  input: window_xml,
+  output: '@BASENAME@-protocol.h',
+  command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
+)
+window_client_header = custom_target(
+  'panoptes-window-v1-client-protocol.h',
+  input: window_xml,
+  output: '@BASENAME@-client-protocol.h',
+  command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+)
+
 cage_sources = [
   'cage.c',
   'idle_inhibit_v1.c',
   'output.c',
+  'panoptes_window_v1.c',
+  window_code,
+  window_server_header,
   'seat.c',
   'view.c',
   'xdg_shell.c',
@@ -115,6 +140,13 @@ executable(
     xkbcommon,
     math,
   ],
+  install: true,
+)
+
+executable(
+  'panoptes-windows',
+  ['panoptes-windows.c', window_code, window_client_header],
+  dependencies: [wayland_client],
   install: true,
 )
 

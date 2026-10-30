@@ -13,6 +13,7 @@
 #include <wlr/util/log.h>
 #include <wlr/xwayland.h>
 
+#include "panoptes_window_v1.h"
 #include "server.h"
 #include "view.h"
 #include "xwayland.h"
@@ -36,6 +37,32 @@ get_title(struct cg_view *view)
 {
 	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	return xwayland_view->xwayland_surface->title;
+}
+
+static char *
+get_app_id(struct cg_view *view)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	return xwayland_view->xwayland_surface->class;
+}
+
+static pid_t
+get_pid(struct cg_view *view)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	return xwayland_view->xwayland_surface->pid;
+}
+
+static struct cg_view *
+get_parent(struct cg_view *view)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	struct wlr_xwayland_surface *parent = xwayland_view->xwayland_surface->parent;
+	if (parent == NULL || parent->data == NULL) {
+		return NULL;
+	}
+	struct cg_xwayland_view *parent_view = parent->data;
+	return &parent_view->view;
 }
 
 static void
@@ -155,6 +182,27 @@ handle_xwayland_surface_map(struct wl_listener *listener, void *data)
 }
 
 static void
+handle_xwayland_surface_set_title(struct wl_listener *listener, void *data)
+{
+	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, set_title);
+	panoptes_window_update(&xwayland_view->view);
+}
+
+static void
+handle_xwayland_surface_set_class(struct wl_listener *listener, void *data)
+{
+	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, set_class);
+	panoptes_window_update(&xwayland_view->view);
+}
+
+static void
+handle_xwayland_surface_set_parent(struct wl_listener *listener, void *data)
+{
+	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, set_parent);
+	panoptes_window_update(&xwayland_view->view);
+}
+
+static void
 handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 {
 	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, destroy);
@@ -164,6 +212,10 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 	wl_list_remove(&xwayland_view->dissociate.link);
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->set_title.link);
+	wl_list_remove(&xwayland_view->set_class.link);
+	wl_list_remove(&xwayland_view->set_parent.link);
+	xwayland_view->xwayland_surface->data = NULL;
 	xwayland_view->xwayland_surface = NULL;
 
 	view_destroy(view);
@@ -171,6 +223,9 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 
 static const struct cg_view_impl xwayland_view_impl = {
 	.get_title = get_title,
+	.get_app_id = get_app_id,
+	.get_pid = get_pid,
+	.get_parent = get_parent,
 	.get_geometry = get_geometry,
 	.is_primary = is_primary,
 	.is_transient_for = is_transient_for,
@@ -214,6 +269,7 @@ handle_xwayland_surface_new(struct wl_listener *listener, void *data)
 
 	view_init(&xwayland_view->view, server, CAGE_XWAYLAND_VIEW, &xwayland_view_impl);
 	xwayland_view->xwayland_surface = xwayland_surface;
+	xwayland_surface->data = xwayland_view;
 
 	xwayland_view->associate.notify = handle_xwayland_associate;
 	wl_signal_add(&xwayland_surface->events.associate, &xwayland_view->associate);
@@ -223,4 +279,10 @@ handle_xwayland_surface_new(struct wl_listener *listener, void *data)
 	wl_signal_add(&xwayland_surface->events.destroy, &xwayland_view->destroy);
 	xwayland_view->request_fullscreen.notify = handle_xwayland_surface_request_fullscreen;
 	wl_signal_add(&xwayland_surface->events.request_fullscreen, &xwayland_view->request_fullscreen);
+	xwayland_view->set_title.notify = handle_xwayland_surface_set_title;
+	wl_signal_add(&xwayland_surface->events.set_title, &xwayland_view->set_title);
+	xwayland_view->set_class.notify = handle_xwayland_surface_set_class;
+	wl_signal_add(&xwayland_surface->events.set_class, &xwayland_view->set_class);
+	xwayland_view->set_parent.notify = handle_xwayland_surface_set_parent;
+	wl_signal_add(&xwayland_surface->events.set_parent, &xwayland_view->set_parent);
 }

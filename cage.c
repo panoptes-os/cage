@@ -55,6 +55,7 @@
 
 #include "idle_inhibit_v1.h"
 #include "output.h"
+#include "panoptes_window_v1.h"
 #include "seat.h"
 #include "server.h"
 #include "view.h"
@@ -604,6 +605,19 @@ main(int argc, char *argv[])
 		}
 	}
 #endif
+
+	const char *xwayland_display = NULL;
+#if CAGE_HAS_XWAYLAND
+	if (xwayland) {
+		xwayland_display = xwayland->display_name;
+	}
+#endif
+	server.panoptes_window_manager = panoptes_window_manager_create(&server, xwayland_display);
+	if (!server.panoptes_window_manager) {
+		wlr_log(WLR_ERROR, "Unable to create the panoptes window manager");
+		ret = 1;
+		goto end;
+	}
 
 	const char *socket = wl_display_add_socket_auto(server.wl_display);
 	if (!socket) {
