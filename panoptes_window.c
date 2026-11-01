@@ -6,6 +6,7 @@
 #include <string.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_output.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
@@ -444,3 +445,33 @@ panoptes_window_resize_outputs(struct cg_server *server)
 	}
 	return true;
 }
+
+#if CAGE_HAS_XWAYLAND
+void
+panoptes_window_handle_request_configure(struct wl_listener *listener, void *data)
+{
+	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, request_configure);
+	struct wlr_xwayland_surface_configure_event *event = data;
+	struct wlr_xwayland_surface *xsurface = xwayland_view->xwayland_surface;
+	struct cg_view *view = &xwayland_view->view;
+
+	if (!view->wlr_surface) {
+		wlr_xwayland_surface_configure(xsurface, event->x, event->y, event->width, event->height);
+		return;
+	}
+
+	if (view_is_primary(view)) {
+		view_position(view);
+		return;
+	}
+
+	struct wlr_box layout_box;
+	wlr_output_layout_get_box(view->server->output_layout, NULL, &layout_box);
+	int width = event->width < layout_box.width ? event->width : layout_box.width;
+	int height = event->height < layout_box.height ? event->height : layout_box.height;
+	view->lx = (layout_box.width - width) / 2;
+	view->ly = (layout_box.height - height) / 2;
+	wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
+	wlr_xwayland_surface_configure(xsurface, view->lx, view->ly, width, height);
+}
+#endif

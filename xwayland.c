@@ -212,6 +212,7 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 	wl_list_remove(&xwayland_view->dissociate.link);
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->request_configure.link);
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_parent.link);
@@ -279,6 +280,8 @@ handle_xwayland_surface_new(struct wl_listener *listener, void *data)
 	wl_signal_add(&xwayland_surface->events.destroy, &xwayland_view->destroy);
 	xwayland_view->request_fullscreen.notify = handle_xwayland_surface_request_fullscreen;
 	wl_signal_add(&xwayland_surface->events.request_fullscreen, &xwayland_view->request_fullscreen);
+	xwayland_view->request_configure.notify = panoptes_window_handle_request_configure;
+	wl_signal_add(&xwayland_surface->events.request_configure, &xwayland_view->request_configure);
 	xwayland_view->set_title.notify = handle_xwayland_surface_set_title;
 	wl_signal_add(&xwayland_surface->events.set_title, &xwayland_view->set_title);
 	xwayland_view->set_class.notify = handle_xwayland_surface_set_class;
