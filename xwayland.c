@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_scene.h>
 #include <wlr/util/log.h>
 #include <wlr/xwayland.h>
 
@@ -202,6 +203,20 @@ handle_xwayland_surface_set_parent(struct wl_listener *listener, void *data)
 }
 
 static void
+handle_xwayland_surface_set_geometry(struct wl_listener *listener, void *data)
+{
+	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, set_geometry);
+	struct cg_view *view = &xwayland_view->view;
+
+	if (xwayland_view_should_manage(view) || view->wlr_surface == NULL) {
+		return;
+	}
+	view->lx = xwayland_view->xwayland_surface->x;
+	view->ly = xwayland_view->xwayland_surface->y;
+	wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
+}
+
+static void
 handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 {
 	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, destroy);
@@ -216,6 +231,7 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_parent.link);
 	xwayland_view->xwayland_surface->data = NULL;
+	wl_list_remove(&xwayland_view->set_geometry.link);
 	xwayland_view->xwayland_surface = NULL;
 
 	view_destroy(view);
@@ -287,4 +303,6 @@ handle_xwayland_surface_new(struct wl_listener *listener, void *data)
 	wl_signal_add(&xwayland_surface->events.set_class, &xwayland_view->set_class);
 	xwayland_view->set_parent.notify = handle_xwayland_surface_set_parent;
 	wl_signal_add(&xwayland_surface->events.set_parent, &xwayland_view->set_parent);
+	xwayland_view->set_geometry.notify = handle_xwayland_surface_set_geometry;
+	wl_signal_add(&xwayland_surface->events.set_geometry, &xwayland_view->set_geometry);
 }
