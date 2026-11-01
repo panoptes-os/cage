@@ -8,7 +8,6 @@
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
-#include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
 
@@ -65,13 +64,10 @@ refresh_string(char **cached, const char *value)
 static struct wlr_box
 view_box(struct cg_view *view)
 {
-	struct wlr_box box = {.x = view->lx, .y = view->ly};
-	view->impl->get_geometry(view, &box.width, &box.height);
-	struct wlr_xdg_surface *xdg_surface = wlr_xdg_surface_try_from_wlr_surface(view->wlr_surface);
-	if (xdg_surface) {
-		box.x += xdg_surface->geometry.x;
-		box.y += xdg_surface->geometry.y;
-	}
+	struct wlr_box box;
+	view->impl->get_geometry(view, &box);
+	box.x = view->lx;
+	box.y = view->ly;
 	return box;
 }
 
