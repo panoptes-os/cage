@@ -5,11 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wayland-server-core.h>
+#include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
 #include <wlr/util/log.h>
 
+#include "output.h"
 #include "panoptes-window-protocol.h"
 #include "panoptes_window.h"
 #include "seat.h"
@@ -398,4 +400,29 @@ panoptes_window_manager_create(struct cg_server *server, const char *xwayland_di
 	manager->display_destroy.notify = handle_display_destroy;
 	wl_display_add_destroy_listener(server->wl_display, &manager->display_destroy);
 	return manager;
+}
+
+bool
+panoptes_window_resize_outputs(struct cg_server *server)
+{
+	if (server->output_width == 0) {
+		return true;
+	}
+
+	struct cg_output *output;
+	wl_list_for_each (output, &server->outputs, link) {
+		if (!output->wlr_output->enabled) {
+			continue;
+		}
+		struct wlr_output_state state = {0};
+		wlr_output_state_set_custom_mode(&state, server->output_width, server->output_height, 0);
+		bool committed = wlr_output_commit_state(output->wlr_output, &state);
+		wlr_output_state_finish(&state);
+		if (!committed) {
+			wlr_log(WLR_ERROR, "Output %s did not take %dx%d", output->wlr_output->name,
+				server->output_width, server->output_height);
+			return false;
+		}
+	}
+	return true;
 }
