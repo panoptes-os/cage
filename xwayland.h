@@ -19,6 +19,7 @@ struct cg_xwayland_view {
 	struct wl_listener set_title;
 	struct wl_listener set_class;
 	struct wl_listener set_parent;
+	struct wl_listener set_geometry;
 };
 
 struct cg_xwayland_view *xwayland_view_from_view(struct cg_view *view);
