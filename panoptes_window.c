@@ -177,6 +177,21 @@ handle_commit(struct wl_listener *listener, void *data)
 	panoptes_window_update(window->view);
 }
 
+static void
+place_x_window(struct cg_view *view)
+{
+#if CAGE_HAS_XWAYLAND
+	if (view->type != CAGE_XWAYLAND_VIEW) {
+		return;
+	}
+	struct wlr_xwayland_surface *xsurface = xwayland_view_from_view(view)->xwayland_surface;
+	/* Xwayland finds the window under the pointer by X window positions. */
+	if (xsurface->x != view->lx || xsurface->y != view->ly) {
+		wlr_xwayland_surface_configure(xsurface, view->lx, view->ly, xsurface->width, xsurface->height);
+	}
+#endif
+}
+
 void
 panoptes_window_map(struct cg_view *view)
 {
@@ -206,6 +221,7 @@ panoptes_window_map(struct cg_view *view)
 	window->commit.notify = handle_commit;
 	wl_signal_add(&view->wlr_surface->events.commit, &window->commit);
 	view->panoptes_window = window;
+	place_x_window(view);
 
 	struct wl_resource *manager_resource;
 	wl_resource_for_each (manager_resource, &manager->resources) {
@@ -231,6 +247,8 @@ panoptes_window_update(struct cg_view *view)
 	if (!window) {
 		return;
 	}
+	place_x_window(view);
+
 	struct wl_resource *resource;
 	bool changed = false;
 
