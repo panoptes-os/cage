@@ -15,6 +15,7 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/log.h>
 
+#include "panoptes_window_v1.h"
 #include "server.h"
 #include "view.h"
 #include "xdg_shell.h"
@@ -297,6 +298,27 @@ handle_xdg_toplevel_commit(struct wl_listener *listener, void *data)
 }
 
 static void
+handle_xdg_toplevel_set_title(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = wl_container_of(listener, xdg_shell_view, set_title);
+	panoptes_window_update(&xdg_shell_view->view);
+}
+
+static void
+handle_xdg_toplevel_set_app_id(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = wl_container_of(listener, xdg_shell_view, set_app_id);
+	panoptes_window_update(&xdg_shell_view->view);
+}
+
+static void
+handle_xdg_toplevel_set_parent(struct wl_listener *listener, void *data)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = wl_container_of(listener, xdg_shell_view, set_parent);
+	panoptes_window_update(&xdg_shell_view->view);
+}
+
+static void
 handle_xdg_toplevel_destroy(struct wl_listener *listener, void *data)
 {
 	struct cg_xdg_shell_view *xdg_shell_view = wl_container_of(listener, xdg_shell_view, destroy);
@@ -307,6 +329,9 @@ handle_xdg_toplevel_destroy(struct wl_listener *listener, void *data)
 	wl_list_remove(&xdg_shell_view->unmap.link);
 	wl_list_remove(&xdg_shell_view->destroy.link);
 	wl_list_remove(&xdg_shell_view->request_fullscreen.link);
+	wl_list_remove(&xdg_shell_view->set_title.link);
+	wl_list_remove(&xdg_shell_view->set_app_id.link);
+	wl_list_remove(&xdg_shell_view->set_parent.link);
 	xdg_shell_view->xdg_toplevel = NULL;
 
 	view_destroy(view);
@@ -351,6 +376,12 @@ handle_new_xdg_toplevel(struct wl_listener *listener, void *data)
 	wl_signal_add(&toplevel->events.destroy, &xdg_shell_view->destroy);
 	xdg_shell_view->request_fullscreen.notify = handle_xdg_toplevel_request_fullscreen;
 	wl_signal_add(&toplevel->events.request_fullscreen, &xdg_shell_view->request_fullscreen);
+	xdg_shell_view->set_title.notify = handle_xdg_toplevel_set_title;
+	wl_signal_add(&toplevel->events.set_title, &xdg_shell_view->set_title);
+	xdg_shell_view->set_app_id.notify = handle_xdg_toplevel_set_app_id;
+	wl_signal_add(&toplevel->events.set_app_id, &xdg_shell_view->set_app_id);
+	xdg_shell_view->set_parent.notify = handle_xdg_toplevel_set_parent;
+	wl_signal_add(&toplevel->events.set_parent, &xdg_shell_view->set_parent);
 
 	toplevel->base->data = xdg_shell_view;
 }
