@@ -39,18 +39,17 @@ get_title(struct cg_view *view)
 }
 
 static void
-get_geometry(struct cg_view *view, int *width_out, int *height_out)
+get_geometry(struct cg_view *view, struct wlr_box *geometry)
 {
 	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
 	struct wlr_xwayland_surface *xsurface = xwayland_view->xwayland_surface;
+	*geometry = (struct wlr_box){0};
 	if (xsurface->surface == NULL) {
-		*width_out = 0;
-		*height_out = 0;
 		return;
 	}
 
-	*width_out = xsurface->surface->current.width;
-	*height_out = xsurface->surface->current.height;
+	geometry->width = xsurface->surface->current.width;
+	geometry->height = xsurface->surface->current.height;
 }
 
 static bool

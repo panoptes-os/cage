@@ -27,7 +27,8 @@ struct cg_view {
 	struct wlr_surface *wlr_surface;
 	struct wlr_scene_tree *scene_tree;
 
-	/* The view has a position in layout coordinates. */
+	/* Where the view's window geometry sits, in layout coordinates. Its
+	   surface's origin sits the geometry's offset away. */
 	int lx, ly;
 
 	enum cg_view_type type;
@@ -40,7 +41,10 @@ struct cg_view {
 
 struct cg_view_impl {
 	char *(*get_title)(struct cg_view *view);
-	void (*get_geometry)(struct cg_view *view, int *width_out, int *height_out);
+	/* The window geometry, relative to the surface's origin. An xdg
+	   window's leaves out client-side shadows, and starts above the
+	   surface when the client draws a title bar as a subsurface over it. */
+	void (*get_geometry)(struct cg_view *view, struct wlr_box *geometry);
 	bool (*is_primary)(struct cg_view *view);
 	bool (*is_transient_for)(struct cg_view *child, struct cg_view *parent);
 	void (*activate)(struct cg_view *view, bool activate);
@@ -55,6 +59,7 @@ bool view_is_transient_for(struct cg_view *child, struct cg_view *parent);
 void view_activate(struct cg_view *view, bool activate);
 void view_position(struct cg_view *view);
 void view_position_all(struct cg_server *server);
+void view_place_scene_tree(struct cg_view *view);
 void view_unmap(struct cg_view *view);
 void view_map(struct cg_view *view, struct wlr_surface *surface);
 void view_destroy(struct cg_view *view);
