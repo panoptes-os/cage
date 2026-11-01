@@ -77,17 +77,20 @@ view_maximize(struct cg_view *view, struct wlr_box *layout_box)
 	view->impl->maximize(view, layout_box->width, layout_box->height);
 }
 
-static void
-view_center(struct cg_view *view, struct wlr_box *layout_box)
+void
+view_center(struct cg_view *view, int width, int height)
 {
-	int width, height;
-	view->impl->get_geometry(view, &width, &height);
+	struct wlr_box layout_box;
+	wlr_output_layout_get_box(view->server->output_layout, NULL, &layout_box);
 
-	view->lx = (layout_box->width - width) / 2;
-	view->ly = (layout_box->height - height) / 2;
+	view->lx = (layout_box.width - width) / 2;
+	view->ly = (layout_box.height - height) / 2;
 
 	if (view->scene_tree) {
 		wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
+	}
+	if (view->impl->center) {
+		view->impl->center(view, width, height);
 	}
 }
 
@@ -100,7 +103,9 @@ view_position(struct cg_view *view)
 	if (view_is_primary(view) || view_extends_output_layout(view, &layout_box)) {
 		view_maximize(view, &layout_box);
 	} else {
-		view_center(view, &layout_box);
+		int width, height;
+		view->impl->get_geometry(view, &width, &height);
+		view_center(view, width, height);
 	}
 	panoptes_window_update(view);
 }

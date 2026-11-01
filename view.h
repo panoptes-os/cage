@@ -54,6 +54,9 @@ struct cg_view_impl {
 	bool (*is_transient_for)(struct cg_view *child, struct cg_view *parent);
 	void (*activate)(struct cg_view *view, bool activate);
 	void (*maximize)(struct cg_view *view, int output_width, int output_height);
+	/* Tells the client its window is centered at (lx, ly) with this size.
+	   Optional. */
+	void (*center)(struct cg_view *view, int width, int height);
 	void (*close)(struct cg_view *view);
 	void (*destroy)(struct cg_view *view);
 };
@@ -64,6 +67,7 @@ bool view_is_transient_for(struct cg_view *child, struct cg_view *parent);
 void view_activate(struct cg_view *view, bool activate);
 void view_position(struct cg_view *view);
 void view_position_all(struct cg_server *server);
+void view_center(struct cg_view *view, int width, int height);
 void view_unmap(struct cg_view *view);
 void view_map(struct cg_view *view, struct wlr_surface *surface);
 void view_destroy(struct cg_view *view);
