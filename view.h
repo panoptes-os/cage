@@ -28,7 +28,7 @@ struct cg_view {
 	struct wlr_surface *wlr_surface;
 	struct wlr_scene_tree *scene_tree;
 
-	/* The view has a position in layout coordinates. */
+	/* The window geometry's position in layout coordinates. */
 	int lx, ly;
 
 	enum cg_view_type type;
@@ -46,7 +46,7 @@ struct cg_view_impl {
 	char *(*get_app_id)(struct cg_view *view);
 	pid_t (*get_pid)(struct cg_view *view);
 	struct cg_view *(*get_parent)(struct cg_view *view);
-	void (*get_geometry)(struct cg_view *view, int *width_out, int *height_out);
+	void (*get_geometry)(struct cg_view *view, struct wlr_box *geometry);
 	bool (*is_primary)(struct cg_view *view);
 	bool (*is_transient_for)(struct cg_view *child, struct cg_view *parent);
 	void (*activate)(struct cg_view *view, bool activate);
@@ -61,6 +61,7 @@ bool view_is_transient_for(struct cg_view *child, struct cg_view *parent);
 void view_activate(struct cg_view *view, bool activate);
 void view_position(struct cg_view *view);
 void view_position_all(struct cg_server *server);
+void view_place_scene_tree(struct cg_view *view);
 void view_unmap(struct cg_view *view);
 void view_map(struct cg_view *view, struct wlr_surface *surface);
 void view_destroy(struct cg_view *view);
