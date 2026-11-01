@@ -243,6 +243,22 @@ handle_xwayland_surface_set_parent(struct wl_listener *listener, void *data)
 }
 
 static void
+handle_xwayland_surface_set_geometry(struct wl_listener *listener, void *data)
+{
+	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, set_geometry);
+	struct cg_view *view = &xwayland_view->view;
+
+	/* Cage places managed windows itself. An override-redirect window
+	   goes wherever its client moves it. */
+	if (xwayland_view_should_manage(view)) {
+		return;
+	}
+	view->lx = xwayland_view->xwayland_surface->x;
+	view->ly = xwayland_view->xwayland_surface->y;
+	view_place_scene_tree(view);
+}
+
+static void
 handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 {
 	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, destroy);
@@ -256,6 +272,7 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_parent.link);
+	wl_list_remove(&xwayland_view->set_geometry.link);
 	xwayland_view->xwayland_surface->data = NULL;
 	xwayland_view->xwayland_surface = NULL;
 
@@ -329,4 +346,6 @@ handle_xwayland_surface_new(struct wl_listener *listener, void *data)
 	wl_signal_add(&xwayland_surface->events.set_class, &xwayland_view->set_class);
 	xwayland_view->set_parent.notify = handle_xwayland_surface_set_parent;
 	wl_signal_add(&xwayland_surface->events.set_parent, &xwayland_view->set_parent);
+	xwayland_view->set_geometry.notify = handle_xwayland_surface_set_geometry;
+	wl_signal_add(&xwayland_surface->events.set_geometry, &xwayland_view->set_geometry);
 }
