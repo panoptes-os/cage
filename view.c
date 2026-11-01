@@ -131,6 +131,7 @@ view_unmap(struct cg_view *view)
 	view->foreign_toplevel_handle = NULL;
 
 	wlr_scene_node_destroy(&view->scene_tree->node);
+	view->scene_tree = NULL;
 
 	view->wlr_surface->data = NULL;
 	view->wlr_surface = NULL;
