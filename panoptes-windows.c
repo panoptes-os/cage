@@ -191,6 +191,27 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = handle_global_remove,
 };
 
+/* Destroys every object and closes the connection, so a leak check finds
+ * nothing. A closed window's object stays valid until destroyed. */
+static void
+disconnect(struct wl_display *display, struct wl_registry *registry)
+{
+	struct window *next;
+	for (struct window *w = windows; w; w = next) {
+		next = w->next;
+		panoptes_window_v1_destroy(w->handle);
+		free(w->app_id);
+		free(w->title);
+		free(w);
+	}
+	if (manager) {
+		panoptes_window_manager_v1_destroy(manager);
+	}
+	wl_registry_destroy(registry);
+	free(xwayland_display);
+	wl_display_disconnect(display);
+}
+
 static int
 usage(void)
 {
@@ -226,6 +247,7 @@ main(int argc, char *argv[])
 	wl_display_roundtrip(display);
 	if (!manager) {
 		fprintf(stderr, "panoptes-windows: the compositor has no panoptes_window_manager_v1\n");
+		disconnect(display, registry);
 		return 1;
 	}
 	wl_display_roundtrip(display);
@@ -233,6 +255,7 @@ main(int argc, char *argv[])
 	if (watching) {
 		while (wl_display_dispatch(display) != -1) {
 		}
+		disconnect(display, registry);
 		return 0;
 	}
 
@@ -245,6 +268,7 @@ main(int argc, char *argv[])
 				print_window(w);
 			}
 		}
+		disconnect(display, registry);
 		return 0;
 	}
 
@@ -256,6 +280,7 @@ main(int argc, char *argv[])
 	}
 	if (!target) {
 		fprintf(stderr, "panoptes-windows: no window with app_id %s\n", argv[2]);
+		disconnect(display, registry);
 		return 1;
 	}
 	if (strcmp(verb, "activate") == 0) {
@@ -264,6 +289,6 @@ main(int argc, char *argv[])
 		panoptes_window_v1_close(target->handle);
 	}
 	wl_display_roundtrip(display);
-	wl_display_disconnect(display);
+	disconnect(display, registry);
 	return 0;
 }
