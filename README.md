@@ -3,7 +3,7 @@
 <img src="https://www.hjdskes.nl/img/projects/cage/cage.svg" alt="Cage's logo" width="150px" align="right">
 
 This is Cage, a Wayland kiosk. A kiosk runs a single, maximized
-application.
+application. This fork is adopted specifically for agent use with [panoptes](https://github.com/panoptes-os/panoptes)
 
 This README is only relevant for development resources and instructions. For a
 description of Cage and installation instructions for end-users, please see
