@@ -4,6 +4,7 @@
 #include "config.h"
 
 #include <stdbool.h>
+#include <sys/types.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_xdg_shell.h>
@@ -36,10 +37,15 @@ struct cg_view {
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel_handle;
 	struct wl_listener request_activate;
 	struct wl_listener request_close;
+
+	struct cg_panoptes_window *panoptes_window;
 };
 
 struct cg_view_impl {
 	char *(*get_title)(struct cg_view *view);
+	char *(*get_app_id)(struct cg_view *view);
+	pid_t (*get_pid)(struct cg_view *view);
+	struct cg_view *(*get_parent)(struct cg_view *view);
 	void (*get_geometry)(struct cg_view *view, int *width_out, int *height_out);
 	bool (*is_primary)(struct cg_view *view);
 	bool (*is_transient_for)(struct cg_view *child, struct cg_view *parent);

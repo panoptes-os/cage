@@ -38,6 +38,8 @@ struct cg_server {
 	struct wl_list inhibitors;
 
 	enum cg_multi_output_mode output_mode;
+	int output_width;
+	int output_height;
 	struct wlr_output_layout *output_layout;
 	struct wlr_scene_output_layout *scene_output_layout;
 
@@ -69,6 +71,7 @@ struct cg_server {
 	struct wlr_relative_pointer_manager_v1 *relative_pointer_manager;
 
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
+	struct cg_panoptes_window_manager *panoptes_window_manager;
 
 	bool xdg_decoration;
 	bool allow_vt_switch;

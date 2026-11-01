@@ -55,6 +55,7 @@
 
 #include "idle_inhibit_v1.h"
 #include "output.h"
+#include "panoptes_window.h"
 #include "seat.h"
 #include "server.h"
 #include "view.h"
@@ -246,6 +247,7 @@ usage(FILE *file, const char *cage)
 		" -h\t Display this help message\n"
 		" -m extend Extend the display across all connected outputs (default)\n"
 		" -m last Use only the last connected output\n"
+		" -r WxH\t At startup, set every enabled output to W by H pixels\n"
 		" -s\t Allow VT switching\n"
 		" -v\t Show the version number and exit\n"
 		"\n"
@@ -257,7 +259,7 @@ static bool
 parse_args(struct cg_server *server, int argc, char *argv[])
 {
 	int c;
-	while ((c = getopt(argc, argv, "dDhm:sv")) != -1) {
+	while ((c = getopt(argc, argv, "dDhm:r:sv")) != -1) {
 		switch (c) {
 		case 'd':
 			server->xdg_decoration = true;
@@ -275,6 +277,15 @@ parse_args(struct cg_server *server, int argc, char *argv[])
 				server->output_mode = CAGE_MULTI_OUTPUT_MODE_EXTEND;
 			}
 			break;
+		case 'r': {
+			char rest;
+			if (sscanf(optarg, "%dx%d%c", &server->output_width, &server->output_height, &rest) != 2 ||
+			    server->output_width <= 0 || server->output_height <= 0) {
+				fprintf(stderr, "Invalid output size '%s': expected WxH, such as 1024x768\n", optarg);
+				return false;
+			}
+			break;
+		}
 		case 's':
 			server->allow_vt_switch = true;
 			break;
@@ -595,6 +606,19 @@ main(int argc, char *argv[])
 	}
 #endif
 
+	const char *xwayland_display = NULL;
+#if CAGE_HAS_XWAYLAND
+	if (xwayland) {
+		xwayland_display = xwayland->display_name;
+	}
+#endif
+	server.panoptes_window_manager = panoptes_window_manager_create(&server, xwayland_display);
+	if (!server.panoptes_window_manager) {
+		wlr_log(WLR_ERROR, "Unable to create the panoptes window manager");
+		ret = 1;
+		goto end;
+	}
+
 	const char *socket = wl_display_add_socket_auto(server.wl_display);
 	if (!socket) {
 		wlr_log_errno(WLR_ERROR, "Unable to open Wayland socket");
@@ -606,6 +630,11 @@ main(int argc, char *argv[])
 		wlr_log(WLR_ERROR, "Unable to start the wlroots backend");
 		ret = 1;
 		goto end;
+	}
+
+	if (!panoptes_window_resize_outputs(&server)) {
+		ret = 1;
+		goto teardown;
 	}
 
 	if (setenv("WAYLAND_DISPLAY", socket, true) < 0) {
@@ -628,6 +657,7 @@ main(int argc, char *argv[])
 	seat_center_cursor(server.seat);
 	wl_display_run(server.wl_display);
 
+teardown:
 #if CAGE_HAS_XWAYLAND
 	if (xwayland) {
 		wl_list_remove(&server.new_xwayland_surface.link);

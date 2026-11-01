@@ -18,6 +18,7 @@
 #include <wlr/types/wlr_scene.h>
 
 #include "output.h"
+#include "panoptes_window.h"
 #include "seat.h"
 #include "server.h"
 #include "view.h"
@@ -101,6 +102,7 @@ view_position(struct cg_view *view)
 	} else {
 		view_center(view, &layout_box);
 	}
+	panoptes_window_update(view);
 }
 
 void
@@ -115,6 +117,7 @@ view_position_all(struct cg_server *server)
 void
 view_unmap(struct cg_view *view)
 {
+	panoptes_window_unmap(view);
 	wl_list_remove(&view->link);
 
 	wl_list_remove(&view->request_activate.link);
@@ -176,6 +179,7 @@ view_map(struct cg_view *view, struct wlr_surface *surface)
 	wl_signal_add(&view->foreign_toplevel_handle->events.request_close, &view->request_close);
 
 	seat_set_focus(view->server->seat, view);
+	panoptes_window_map(view);
 	return;
 
 fail:
