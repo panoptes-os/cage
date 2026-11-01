@@ -58,10 +58,23 @@ view_activate(struct cg_view *view, bool activate)
 static bool
 view_extends_output_layout(struct cg_view *view, struct wlr_box *layout_box)
 {
-	int width, height;
-	view->impl->get_geometry(view, &width, &height);
+	struct wlr_box geometry;
+	view->impl->get_geometry(view, &geometry);
 
-	return (layout_box->height < height || layout_box->width < width);
+	return (layout_box->height < geometry.height || layout_box->width < geometry.width);
+}
+
+void
+view_place_scene_tree(struct cg_view *view)
+{
+	if (!view->scene_tree) {
+		return;
+	}
+	/* (lx, ly) is where the window geometry goes, and the geometry is
+	   relative to the surface. */
+	struct wlr_box geometry;
+	view->impl->get_geometry(view, &geometry);
+	wlr_scene_node_set_position(&view->scene_tree->node, view->lx - geometry.x, view->ly - geometry.y);
 }
 
 static void
@@ -69,10 +82,7 @@ view_maximize(struct cg_view *view, struct wlr_box *layout_box)
 {
 	view->lx = layout_box->x;
 	view->ly = layout_box->y;
-
-	if (view->scene_tree) {
-		wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
-	}
+	view_place_scene_tree(view);
 
 	view->impl->maximize(view, layout_box->width, layout_box->height);
 }
@@ -85,10 +95,8 @@ view_center(struct cg_view *view, int width, int height)
 
 	view->lx = (layout_box.width - width) / 2;
 	view->ly = (layout_box.height - height) / 2;
+	view_place_scene_tree(view);
 
-	if (view->scene_tree) {
-		wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
-	}
 	if (view->impl->center) {
 		view->impl->center(view, width, height);
 	}
@@ -103,9 +111,9 @@ view_position(struct cg_view *view)
 	if (view_is_primary(view) || view_extends_output_layout(view, &layout_box)) {
 		view_maximize(view, &layout_box);
 	} else {
-		int width, height;
-		view->impl->get_geometry(view, &width, &height);
-		view_center(view, width, height);
+		struct wlr_box geometry;
+		view->impl->get_geometry(view, &geometry);
+		view_center(view, geometry.width, geometry.height);
 	}
 	panoptes_window_update(view);
 }
