@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <wayland-server-core.h>
 #include <wlr/types/wlr_foreign_toplevel_management_v1.h>
+#include <wlr/types/wlr_output_layout.h>
 #include <wlr/util/log.h>
 #include <wlr/xwayland.h>
 
@@ -159,6 +160,37 @@ handle_xwayland_surface_request_fullscreen(struct wl_listener *listener, void *d
 }
 
 static void
+handle_xwayland_surface_request_configure(struct wl_listener *listener, void *data)
+{
+	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, request_configure);
+	struct wlr_xwayland_surface_configure_event *event = data;
+	struct wlr_xwayland_surface *xsurface = xwayland_view->xwayland_surface;
+	struct cg_view *view = &xwayland_view->view;
+
+	/* Before it maps, a window gets what it asks for; view_map places it
+	   by the size it maps at. */
+	if (!xsurface->surface || !xsurface->surface->mapped) {
+		wlr_xwayland_surface_configure(xsurface, event->x, event->y, event->width, event->height);
+		return;
+	}
+
+	/* A main window keeps the whole output. Positioning it again answers
+	   the request with the output's size. */
+	if (view_is_primary(view)) {
+		view_position(view);
+		return;
+	}
+
+	/* A dialog takes the size it asks for, at most the output's, centered
+	   again. */
+	struct wlr_box layout_box;
+	wlr_output_layout_get_box(view->server->output_layout, NULL, &layout_box);
+	int width = event->width < layout_box.width ? event->width : layout_box.width;
+	int height = event->height < layout_box.height ? event->height : layout_box.height;
+	view_center(view, width, height);
+}
+
+static void
 handle_xwayland_surface_unmap(struct wl_listener *listener, void *data)
 {
 	struct cg_xwayland_view *xwayland_view = wl_container_of(listener, xwayland_view, unmap);
@@ -221,6 +253,7 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 	wl_list_remove(&xwayland_view->dissociate.link);
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	wl_list_remove(&xwayland_view->request_configure.link);
 	wl_list_remove(&xwayland_view->set_title.link);
 	wl_list_remove(&xwayland_view->set_class.link);
 	wl_list_remove(&xwayland_view->set_parent.link);
@@ -289,6 +322,8 @@ handle_xwayland_surface_new(struct wl_listener *listener, void *data)
 	wl_signal_add(&xwayland_surface->events.destroy, &xwayland_view->destroy);
 	xwayland_view->request_fullscreen.notify = handle_xwayland_surface_request_fullscreen;
 	wl_signal_add(&xwayland_surface->events.request_fullscreen, &xwayland_view->request_fullscreen);
+	xwayland_view->request_configure.notify = handle_xwayland_surface_request_configure;
+	wl_signal_add(&xwayland_surface->events.request_configure, &xwayland_view->request_configure);
 	xwayland_view->set_title.notify = handle_xwayland_surface_set_title;
 	wl_signal_add(&xwayland_surface->events.set_title, &xwayland_view->set_title);
 	xwayland_view->set_class.notify = handle_xwayland_surface_set_class;
