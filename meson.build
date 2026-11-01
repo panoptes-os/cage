@@ -90,10 +90,28 @@ if scdoc.found()
   endforeach
 endif
 
+wayland_scanner = find_program('wayland-scanner', native: true)
+window_xml = 'protocols/panoptes-window.xml'
+window_code = custom_target(
+  'panoptes-window-protocol.c',
+  input: window_xml,
+  output: '@BASENAME@-protocol.c',
+  command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@'],
+)
+window_server_header = custom_target(
+  'panoptes-window-protocol.h',
+  input: window_xml,
+  output: '@BASENAME@-protocol.h',
+  command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
+)
+
 cage_sources = [
   'cage.c',
   'idle_inhibit_v1.c',
   'output.c',
+  'panoptes_window.c',
+  window_code,
+  window_server_header,
   'seat.c',
   'view.c',
   'xdg_shell.c',

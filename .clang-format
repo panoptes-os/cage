@@ -4,7 +4,7 @@ AlwaysBreakAfterReturnType: TopLevelDefinitions
 BreakBeforeBraces: Linux
 ColumnLimit: 120
 ContinuationIndentWidth: 8
-ForEachMacros: [wl_list_for_each, wl_list_for_each_safe, wl_list_for_each_reverse]
+ForEachMacros: [wl_list_for_each, wl_list_for_each_safe, wl_list_for_each_reverse, wl_resource_for_each, wl_resource_for_each_safe]
 IndentWidth: 8
 ReflowComments: true
 SortIncludes: true

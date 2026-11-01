@@ -37,6 +37,8 @@ struct cg_view {
 	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel_handle;
 	struct wl_listener request_activate;
 	struct wl_listener request_close;
+
+	struct cg_panoptes_window *panoptes_window;
 };
 
 struct cg_view_impl {

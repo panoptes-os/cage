@@ -36,6 +36,7 @@
 #endif
 
 #include "output.h"
+#include "panoptes_window.h"
 #include "seat.h"
 #include "server.h"
 #include "view.h"
@@ -971,6 +972,11 @@ seat_set_focus(struct cg_seat *seat, struct cg_view *view)
 	}
 
 	process_cursor_motion(seat, -1, 0, 0, 0, 0);
+
+	if (prev_view) {
+		panoptes_window_update(prev_view);
+	}
+	panoptes_window_update(view);
 }
 
 void
