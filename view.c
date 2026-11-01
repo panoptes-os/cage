@@ -88,6 +88,9 @@ view_center(struct cg_view *view, struct wlr_box *layout_box)
 	if (view->scene_tree) {
 		wlr_scene_node_set_position(&view->scene_tree->node, view->lx, view->ly);
 	}
+	if (view->impl->center) {
+		view->impl->center(view, width, height);
+	}
 }
 
 void

@@ -97,6 +97,15 @@ maximize(struct cg_view *view, int output_width, int output_height)
 }
 
 static void
+center(struct cg_view *view, int width, int height)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	/* Xwayland finds the window under the pointer by X window positions,
+	   so X must know where the window is drawn. */
+	wlr_xwayland_surface_configure(xwayland_view->xwayland_surface, view->lx, view->ly, width, height);
+}
+
+static void
 destroy(struct cg_view *view)
 {
 	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
@@ -176,6 +185,7 @@ static const struct cg_view_impl xwayland_view_impl = {
 	.is_transient_for = is_transient_for,
 	.activate = activate,
 	.maximize = maximize,
+	.center = center,
 	.destroy = destroy,
 	.close = close,
 };
