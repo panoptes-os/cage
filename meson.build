@@ -39,6 +39,7 @@ endif
 
 wlroots        = dependency('wlroots-0.20', fallback: ['wlroots', 'wlroots'])
 wayland_server = dependency('wayland-server')
+wayland_client = dependency('wayland-client')
 xkbcommon      = dependency('xkbcommon')
 math           = cc.find_library('m')
 
@@ -104,6 +105,12 @@ window_server_header = custom_target(
   output: '@BASENAME@-protocol.h',
   command: [wayland_scanner, 'server-header', '@INPUT@', '@OUTPUT@'],
 )
+window_client_header = custom_target(
+  'panoptes-window-v1-client-protocol.h',
+  input: window_xml,
+  output: '@BASENAME@-client-protocol.h',
+  command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+)
 
 cage_sources = [
   'cage.c',
@@ -133,6 +140,13 @@ executable(
     xkbcommon,
     math,
   ],
+  install: true,
+)
+
+executable(
+  'panoptes-windows',
+  ['panoptes-windows.c', window_code, window_client_header],
+  dependencies: [wayland_client],
   install: true,
 )
 
