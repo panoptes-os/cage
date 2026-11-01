@@ -281,7 +281,9 @@ handle_new_output(struct wl_listener *listener, void *data)
 
 	struct wlr_output_state state = {0};
 	wlr_output_state_set_enabled(&state, true);
-	if (!wl_list_empty(&wlr_output->modes)) {
+	if (server->output_width > 0) {
+		wlr_output_state_set_custom_mode(&state, server->output_width, server->output_height, 0);
+	} else if (!wl_list_empty(&wlr_output->modes)) {
 		struct wlr_output_mode *preferred_mode = wlr_output_preferred_mode(wlr_output);
 		if (preferred_mode) {
 			wlr_output_state_set_mode(&state, preferred_mode);
@@ -314,6 +316,10 @@ handle_new_output(struct wl_listener *listener, void *data)
 	wlr_log(WLR_DEBUG, "Enabling new output %s", wlr_output->name);
 	if (wlr_output_commit_state(wlr_output, &state)) {
 		output_layout_add_auto(output);
+	} else if (server->output_width > 0) {
+		wlr_log(WLR_ERROR, "Output %s did not take the %dx%d that -r asked for", wlr_output->name,
+			server->output_width, server->output_height);
+		server->output_size_failed = true;
 	}
 
 	view_position_all(output->server);

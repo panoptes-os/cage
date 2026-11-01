@@ -38,6 +38,11 @@ struct cg_server {
 	struct wl_list inhibitors;
 
 	enum cg_multi_output_mode output_mode;
+	/* The size every output starts at, from -r; zero when unset. */
+	int output_width;
+	int output_height;
+	/* An output refused the -r size; main() checks once the backend starts. */
+	bool output_size_failed;
 	struct wlr_output_layout *output_layout;
 	struct wlr_scene_output_layout *scene_output_layout;
 

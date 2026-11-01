@@ -246,6 +246,7 @@ usage(FILE *file, const char *cage)
 		" -h\t Display this help message\n"
 		" -m extend Extend the display across all connected outputs (default)\n"
 		" -m last Use only the last connected output\n"
+		" -r WxH\t Start every output at W by H pixels\n"
 		" -s\t Allow VT switching\n"
 		" -v\t Show the version number and exit\n"
 		"\n"
@@ -257,7 +258,7 @@ static bool
 parse_args(struct cg_server *server, int argc, char *argv[])
 {
 	int c;
-	while ((c = getopt(argc, argv, "dDhm:sv")) != -1) {
+	while ((c = getopt(argc, argv, "dDhm:r:sv")) != -1) {
 		switch (c) {
 		case 'd':
 			server->xdg_decoration = true;
@@ -275,6 +276,15 @@ parse_args(struct cg_server *server, int argc, char *argv[])
 				server->output_mode = CAGE_MULTI_OUTPUT_MODE_EXTEND;
 			}
 			break;
+		case 'r': {
+			char rest;
+			if (sscanf(optarg, "%dx%d%c", &server->output_width, &server->output_height, &rest) != 2 ||
+			    server->output_width <= 0 || server->output_height <= 0) {
+				fprintf(stderr, "Invalid output size '%s': expected WxH, such as 1024x768\n", optarg);
+				return false;
+			}
+			break;
+		}
 		case 's':
 			server->allow_vt_switch = true;
 			break;
@@ -604,6 +614,14 @@ main(int argc, char *argv[])
 
 	if (!wlr_backend_start(server.backend)) {
 		wlr_log(WLR_ERROR, "Unable to start the wlroots backend");
+		ret = 1;
+		goto end;
+	}
+
+	/* Starting the backend announced its outputs. One that did not take the
+	 * size -r asked for would give clients and screenshots the wrong
+	 * geometry, so refuse to run. */
+	if (server.output_size_failed) {
 		ret = 1;
 		goto end;
 	}

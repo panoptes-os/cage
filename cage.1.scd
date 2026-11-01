@@ -30,6 +30,10 @@ activities outside the scope of the running application are prevented.
 	*last* Cage uses only the last connected monitor.
 	*extend* Cage extends the display across all connected monitors.
 
+*-r* <width>x<height>
+	Start every output at this size in pixels, such as 1024x768. Cage exits
+	with an error if an output present at startup does not take it.
+
 *-s*
 	Allow VT switching
 
