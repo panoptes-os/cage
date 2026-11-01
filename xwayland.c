@@ -38,6 +38,32 @@ get_title(struct cg_view *view)
 	return xwayland_view->xwayland_surface->title;
 }
 
+static char *
+get_app_id(struct cg_view *view)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	return xwayland_view->xwayland_surface->class;
+}
+
+static pid_t
+get_pid(struct cg_view *view)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	return xwayland_view->xwayland_surface->pid;
+}
+
+static struct cg_view *
+get_parent(struct cg_view *view)
+{
+	struct cg_xwayland_view *xwayland_view = xwayland_view_from_view(view);
+	struct wlr_xwayland_surface *parent = xwayland_view->xwayland_surface->parent;
+	if (parent == NULL || parent->data == NULL) {
+		return NULL;
+	}
+	struct cg_xwayland_view *parent_view = parent->data;
+	return &parent_view->view;
+}
+
 static void
 get_geometry(struct cg_view *view, int *width_out, int *height_out)
 {
@@ -164,6 +190,7 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 	wl_list_remove(&xwayland_view->dissociate.link);
 	wl_list_remove(&xwayland_view->destroy.link);
 	wl_list_remove(&xwayland_view->request_fullscreen.link);
+	xwayland_view->xwayland_surface->data = NULL;
 	xwayland_view->xwayland_surface = NULL;
 
 	view_destroy(view);
@@ -171,6 +198,9 @@ handle_xwayland_surface_destroy(struct wl_listener *listener, void *data)
 
 static const struct cg_view_impl xwayland_view_impl = {
 	.get_title = get_title,
+	.get_app_id = get_app_id,
+	.get_pid = get_pid,
+	.get_parent = get_parent,
 	.get_geometry = get_geometry,
 	.is_primary = is_primary,
 	.is_transient_for = is_transient_for,
@@ -214,6 +244,7 @@ handle_xwayland_surface_new(struct wl_listener *listener, void *data)
 
 	view_init(&xwayland_view->view, server, CAGE_XWAYLAND_VIEW, &xwayland_view_impl);
 	xwayland_view->xwayland_surface = xwayland_surface;
+	xwayland_surface->data = xwayland_view;
 
 	xwayland_view->associate.notify = handle_xwayland_associate;
 	wl_signal_add(&xwayland_surface->events.associate, &xwayland_view->associate);

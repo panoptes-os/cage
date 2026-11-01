@@ -125,6 +125,34 @@ get_title(struct cg_view *view)
 	return xdg_shell_view->xdg_toplevel->title;
 }
 
+static char *
+get_app_id(struct cg_view *view)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	return xdg_shell_view->xdg_toplevel->app_id;
+}
+
+static pid_t
+get_pid(struct cg_view *view)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	pid_t pid = 0;
+	wl_client_get_credentials(wl_resource_get_client(xdg_shell_view->xdg_toplevel->resource), &pid, NULL, NULL);
+	return pid;
+}
+
+static struct cg_view *
+get_parent(struct cg_view *view)
+{
+	struct cg_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
+	struct wlr_xdg_toplevel *parent = xdg_shell_view->xdg_toplevel->parent;
+	if (parent == NULL || parent->base->data == NULL) {
+		return NULL;
+	}
+	struct cg_xdg_shell_view *parent_view = parent->base->data;
+	return &parent_view->view;
+}
+
 static void
 get_geometry(struct cg_view *view, int *width_out, int *height_out)
 {
@@ -286,6 +314,9 @@ handle_xdg_toplevel_destroy(struct wl_listener *listener, void *data)
 
 static const struct cg_view_impl xdg_shell_view_impl = {
 	.get_title = get_title,
+	.get_app_id = get_app_id,
+	.get_pid = get_pid,
+	.get_parent = get_parent,
 	.get_geometry = get_geometry,
 	.is_primary = is_primary,
 	.is_transient_for = is_transient_for,
