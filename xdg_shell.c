@@ -102,9 +102,11 @@ popup_unconstrain(struct wlr_xdg_popup *popup)
 	struct wlr_box output_box;
 	wlr_output_layout_get_box(output_layout, wlr_output, &output_box);
 
+	struct wlr_box geometry;
+	view->impl->get_geometry(view, &geometry);
 	struct wlr_box output_toplevel_box = {
-		.x = output_box.x - view->lx,
-		.y = output_box.y - view->ly,
+		.x = output_box.x - view->lx + geometry.x,
+		.y = output_box.y - view->ly + geometry.y,
 		.width = output_box.width,
 		.height = output_box.height,
 	};
@@ -126,13 +128,10 @@ get_title(struct cg_view *view)
 }
 
 static void
-get_geometry(struct cg_view *view, int *width_out, int *height_out)
+get_geometry(struct cg_view *view, struct wlr_box *geometry)
 {
 	struct cg_xdg_shell_view *xdg_shell_view = xdg_shell_view_from_view(view);
-	struct wlr_xdg_surface *xdg_surface = xdg_shell_view->xdg_toplevel->base;
-
-	*width_out = xdg_surface->geometry.width;
-	*height_out = xdg_surface->geometry.height;
+	*geometry = xdg_shell_view->xdg_toplevel->base->geometry;
 }
 
 static bool
@@ -266,6 +265,7 @@ handle_xdg_toplevel_commit(struct wl_listener *listener, void *data)
 	if (xdg_shell_view->xdg_toplevel->base->surface->mapped) {
 		wlr_foreign_toplevel_handle_v1_set_fullscreen(xdg_shell_view->view.foreign_toplevel_handle,
 							      xdg_shell_view->xdg_toplevel->current.fullscreen);
+		view_place_scene_tree(&xdg_shell_view->view);
 	}
 
 	if (xdg_shell_view->xdg_toplevel->base->initial_commit) {
